@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings – Strathmore Marketplace</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <style>
+    /* ── Dark Theme ── */
+    body.dark {
+      --bg:         #0f1117;
+      --white:      #1a1d27;
+      --text:       #f0f2f5;
+      --text-2:     #c9cdd6;
+      --text-3:     #8b92a5;
+      --text-4:     #5a6174;
+      --border:     #2a2f3e;
+      --border-2:   #333849;
+      --gray-bg:    #1e2130;
+      --shadow:     0 1px 3px rgba(0,0,0,.4);
+      --shadow-md:  0 4px 10px rgba(0,0,0,.5);
+    }
+    body.dark .sidebar        { background: #13161f; border-color: #2a2f3e; }
+    body.dark .sidebar-logo   { border-color: #2a2f3e; }
+    body.dark .sidebar-user   { border-color: #2a2f3e; }
+    body.dark .sidebar-foot   { border-color: #2a2f3e; color: #5a6174; }
+    body.dark .nav-item       { color: #8b92a5; }
+    body.dark .nav-item:hover { background: #1e2130; }
+    body.dark .app-topbar     { background: #13161f; border-color: #2a2f3e; }
+    body.dark .card           { background: #13161f; border-color: #2a2f3e; }
+    body.dark .form-input     { background: #1e2130; border-color: #2a2f3e; color: #f0f2f5; }
+    body.dark .form-input:focus { border-color: #4a6fa5; }
+    body.dark .data-table th  { border-color: #2a2f3e; }
+    body.dark .data-table td  { border-color: #2a2f3e; }
+    body.dark .data-table tr:hover td { background: #1a1d27; }
+    body.dark footer           { background: #13161f !important; border-color: #2a2f3e !important; }
+    body.dark .sidebar-overlay.show { background: rgba(0,0,0,.65); }
+
+    /* ── Toggle Switch ── */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-weight: 600; font-size: 0.88rem; }
+    .toggle-desc  { font-size: 0.75rem; color: var(--text-3); margin-top: 2px; }
+    .toggle-switch {
+      position: relative; width: 44px; height: 24px; flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute; inset: 0; background: var(--border-2);
+      border-radius: 12px; cursor: pointer; transition: background .2s;
+    }
+    .toggle-switch input:checked + .toggle-track { background: var(--navy); }
+    .toggle-track::after {
+      content: ''; position: absolute; left: 3px; top: 3px;
+      width: 18px; height: 18px; border-radius: 50%; background: white;
+      transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle-switch input:checked + .toggle-track::after { transform: translateX(20px); }
+
+    /* ── Section card ── */
+    .settings-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; margin-bottom: 20px;
+    }
+    .settings-card-head {
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      font-weight: 700; font-size: 0.93rem; display: flex; align-items: center; gap: 8px;
+    }
+    .settings-card-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Role badge ── */
+    .role-display {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;
+      background: var(--gray-bg); color: var(--text-2); border: 1.5px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">🏛 Strathmore Marketplace</div>
+  <div class="sidebar-user">
+    <div class="avatar" id="sidebarAvatar">SS</div>
+    <div>
+      <div class="sidebar-uname" id="sidebarName">Loading…</div>
+      <div class="sidebar-urole" id="sidebarRole">Student</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="marketplace.html"><span class="nav-icon">🏪</span>Marketplace</a>
+    <a class="nav-item" href="my-shop.html"><span class="nav-icon">🏷️</span>My Shop</a>
+    <a class="nav-item" href="admin.html"><span class="nav-icon">📊</span>Analytics</a>
+    <a class="nav-item" href="orders.html"><span class="nav-icon">📦</span>Orders</a>
+    <a class="nav-item active" href="settings.html"><span class="nav-icon">⚙️</span>Settings</a>
+    <a class="nav-item" href="#" onclick="logout();return false" style="margin-top:auto;color:var(--red)"><span class="nav-icon">🚪</span>Sign Out</a>
+  </nav>
+  <div class="sidebar-foot" id="sidebarFoot">Student ID: —</div>
+</aside>
+
+<div class="app-layout">
+  <main class="app-main">
+
+    <div class="app-topbar">
+      <button class="icon-btn" onclick="toggleSidebar()">☰</button>
+      <div style="flex:1"></div>
+    </div>
+
+    <div class="app-content" style="max-width:780px">
+
+      <div class="page-head">
+        <div>
+          <h1>Settings</h1>
+          <p class="page-sub">Manage your account and preferences.</p>
+        </div>
+      </div>
+
+      <!-- Account Info -->
+      <div class="settings-card" id="accountCard">
+        <div class="settings-card-head">👤 Account Information</div>
+        <div class="settings-card-body" id="accountForm">
+          <div class="spinner-wrap"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- Preferences -->
+      <div class="settings-card">
+        <div class="settings-card-head">🎨 Preferences</div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Dark Mode</div>
+            <div class="toggle-desc">Switch between light and dark interface</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="darkToggle" onchange="applyTheme(this.checked)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Transaction History -->
+      <div class="settings-card">
+        <div class="settings-card-head">🧾 Transaction History</div>
+        <div id="txHistory">
+          <div class="spinner-wrap"><div class="spinner"></div><p class="text-gray text-sm">Loading…</p></div>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="settings-card" style="border-color:#fecaca">
+        <div class="settings-card-head" style="color:var(--red)">🚪 Session</div>
+        <div style="padding:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-weight:600;font-size:0.88rem">Sign out of your account</div>
+            <div style="font-size:0.75rem;color:var(--text-3);margin-top:2px">You will be redirected to the login page.</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="logout()">Sign Out</button>
+        </div>
+      </div>
+
+    </div>
+
+    <footer style="border-top:1px solid var(--border);padding:14px 22px;display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:var(--text-3);flex-wrap:wrap;gap:6px;background:white">
+      <div>
+        <strong style="color:var(--text);display:block">Strathmore University Flea Market</strong>
+        © 2024 Strathmore University Flea Market
+      </div>
+      <div style="display:flex;gap:16px">
+        <a href="#">Terms of Service</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Help Center</a>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<script src="js/main.js"></script>
+<script>
+  let currentProfile = null
+
+  /* ── Theme ── */
+  function applyTheme(dark) {
+    document.body.classList.toggle('dark', dark)
+    localStorage.setItem('theme', dark ? 'dark' : 'light')
+    document.getElementById('darkToggle').checked = dark
+  }
+
+  function initTheme() {
+    const saved = localStorage.getItem('theme')
+    applyTheme(saved === 'dark')
+  }
+
+  /* ── Account form ── */
+  function renderAccountForm(profile) {
+    const roleLabel = profile.role === 'admin' ? 'Administrator'
+                    : profile.role === 'vendor' ? 'Verified Vendor'
+                    : 'Student'
+
+    document.getElementById('accountForm').innerHTML = `
+      <div id="profileAlert"></div>
+
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">
+        <div class="avatar" style="width:52px;height:52px;font-size:1.1rem" id="bigAvatar">
+          ${(profile.full_name || profile.email || 'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:1rem" id="displayName">${profile.full_name || '—'}</div>
+          <span class="role-display">${roleLabel}</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="fFullName" type="text" value="${profile.full_name || ''}" placeholder="Your full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="fUsername" type="text" value="${profile.username || ''}" placeholder="@username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input class="form-input" id="fPhone" type="tel" value="${profile.phone || ''}" placeholder="+254 7xx xxx xxx">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" id="fEmail" type="email" value="${profile.email || ''}" disabled
+          style="background:var(--gray-bg);cursor:not-allowed;opacity:.7"
+          title="Email cannot be changed here">
+        <span style="font-size:0.72rem;color:var(--text-3)">Email is managed through your auth provider.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <input class="form-input" type="text" value="${roleLabel}" disabled
+          style="background:var(--gray-bg);cursor:not-allowed;opacity:.7">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:4px">
+        <button class="btn btn-outline btn-sm" onclick="resetForm()">Reset</button>
+        <button class="btn btn-primary btn-sm" id="saveBtn" onclick="saveProfile()">Save Changes</button>
+      </div>`
+  }
+
+  function resetForm() {
+    if (!currentProfile) return
+    renderAccountForm(currentProfile)
+    showToast('Changes discarded.')
+  }
+
+  async function saveProfile() {
+    const btn = document.getElementById('saveBtn')
+    const alertEl = document.getElementById('profileAlert')
+    alertEl.innerHTML = ''
+
+    const fullName = document.getElementById('fFullName').value.trim()
+    const username = document.getElementById('fUsername').value.trim()
+    const phone    = document.getElementById('fPhone').value.trim()
+
+    if (!fullName) {
+      alertEl.innerHTML = '<div class="alert alert-error" style="margin-bottom:10px">Full name is required.</div>'
+      return
+    }
+
+    btn.disabled = true
+    btn.textContent = 'Saving…'
+
+    const { error } = await sb.from('users')
+      .update({ full_name: fullName, username, phone })
+      .eq('id', currentProfile.id)
+
+    if (error) {
+      alertEl.innerHTML = `<div class="alert alert-error" style="margin-bottom:10px">${error.message}</div>`
+      btn.disabled = false
+      btn.textContent = 'Save Changes'
+      return
+    }
+
+    currentProfile = { ...currentProfile, full_name: fullName, username, phone }
+    showToast('✅ Profile updated!')
+    await populateSidebar()
+    renderAccountForm(currentProfile)
+  }
+
+  /* ── Transaction history ── */
+  async function loadTransactions(userId) {
+    const el = document.getElementById('txHistory')
+
+    const { data, error } = await sb.from('orders')
+      .select('*, products(title, category, price)')
+      .eq('buyer_id', userId)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(20)
+
+    if (error) { showError(el, 'Failed to load transactions.'); return }
+
+    if (!data?.length) {
+      el.innerHTML = '<div style="padding:16px 18px;font-size:0.85rem;color:var(--text-3)">No completed transactions yet.</div>'
+      return
+    }
+
+    const total = data.reduce((s, o) => s + Number(o.products?.price || o.total_price || 0), 0)
+
+    el.innerHTML = `
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.82rem;color:var(--text-3)">
+        <span>${data.length} completed order${data.length !== 1 ? 's' : ''}</span>
+        <span style="font-weight:700;color:var(--text)">Total spent: ${fmtPrice(total)}</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(o => {
+              const p = o.products || {}
+              return `<tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <span style="font-size:1.1rem">${catEmoji(p.category)}</span>
+                    <span style="font-weight:600;font-size:0.85rem">${p.title || '—'}</span>
+                  </div>
+                </td>
+                <td style="font-weight:700">${fmtPrice(p.price || o.total_price || 0)}</td>
+                <td style="color:var(--text-3);font-size:0.82rem">${fmtDate(o.created_at)}</td>
+              </tr>`
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`
+  }
+
+  /* ── Init ── */
+  initTheme()
+
+  requireAuth().then(async session => {
+    if (!session) return
+    const profile = await getProfile()
+    if (!profile) return
+
+    currentProfile = profile
+    await populateSidebar()
+    renderAccountForm(profile)
+    await loadTransactions(session.user.id)
+  })
+</script>
+</body>
+</html>
